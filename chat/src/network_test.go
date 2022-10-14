@@ -62,8 +62,8 @@ func TestNetwork_SendToClient(t *testing.T) {
 		t.Error(err)
 	}
 
-	result := <-receiverInboundMsgChan
-	if outboundMsg.Value("content") != result.Value("content") {
+	inboundMsg := <-receiverInboundMsgChan
+	if outboundMsg.Value("content") != inboundMsg.Value("content") {
 		t.Fail()
 	}
 }
