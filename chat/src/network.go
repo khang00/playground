@@ -8,5 +8,5 @@ type network struct {
 }
 
 func NewNetwork() Network {
-
+	return &network{}
 }

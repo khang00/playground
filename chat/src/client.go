@@ -6,18 +6,18 @@ import (
 )
 
 type Client interface {
-	send(message []byte) error
+	send(msg []byte) error
 	run()
 }
 
-type MessageHandler = func(messageType int, message []byte)
+type ClientMsgHandler = func(msgType int, msg []byte)
 
 type client struct {
 	conn    *websocket.Conn
-	handler MessageHandler
+	handler ClientMsgHandler
 }
 
-func NewClient(conn *websocket.Conn, handler MessageHandler) Client {
+func NewClient(conn *websocket.Conn, handler ClientMsgHandler) Client {
 	return &client{
 		conn:    conn,
 		handler: handler,
@@ -28,8 +28,8 @@ func (c *client) run() {
 	go c.serve()
 }
 
-func (c *client) send(message []byte) error {
-	err := c.conn.WriteMessage(websocket.BinaryMessage, message)
+func (c *client) send(msg []byte) error {
+	err := c.conn.WriteMessage(websocket.BinaryMessage, msg)
 	if err != nil {
 		return nil
 	}
@@ -39,7 +39,7 @@ func (c *client) send(message []byte) error {
 
 func (c *client) serve() {
 	for {
-		messageType, message, err := c.conn.ReadMessage()
+		msgType, msg, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
@@ -47,6 +47,6 @@ func (c *client) serve() {
 			break
 		}
 
-		c.handler(messageType, message)
+		c.handler(msgType, msg)
 	}
 }
