@@ -9,18 +9,9 @@ import (
 )
 
 func TestNetwork_SendToClient(t *testing.T) {
-	clientIDs := make([]ClientID, 0)
-	n := NewNetwork(func(n Network, localClientID ClientID, msg Message) {
-		action := msg.Value("action")
-		if action == "send_msg" {
-			receiverID := msg.Value("receiver")
-			err := n.SendToClient(ClientID(receiverID), msg)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-	})
+	n := startNetwork(t)
 
+	clientIDs := make([]ClientID, 0)
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testUpgrade := websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -41,15 +32,15 @@ func TestNetwork_SendToClient(t *testing.T) {
 	}))
 	defer s.Close()
 
-	c1 := startNewClient(t, s, "1", func(msgType int, msg []byte) {})
-	c2InboundChan := make(chan Message)
+	sender := startNewClient(t, s, "1", func(msgType int, msg []byte) {})
+	receiverInboundMsgChan := make(chan Message)
 	_ = startNewClient(t, s, "2", func(msgType int, bytes []byte) {
 		inboundMsg, err := NewMsgFromByte(bytes)
 		if err != nil {
 			t.Error(err)
 		}
 
-		c2InboundChan <- inboundMsg
+		receiverInboundMsgChan <- inboundMsg
 	})
 
 	for len(clientIDs) < 2 {
@@ -66,15 +57,30 @@ func TestNetwork_SendToClient(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = c1.Send(outboundMsgBytes)
+	err = sender.Send(outboundMsgBytes)
 	if err != nil {
 		t.Error(err)
 	}
 
-	result := <-c2InboundChan
+	result := <-receiverInboundMsgChan
 	if outboundMsg.Value("content") != result.Value("content") {
 		t.Fail()
 	}
+}
+
+func startNetwork(t *testing.T) Network {
+	n := NewNetwork(func(n Network, localClientID ClientID, msg Message) {
+		action := msg.Value("action")
+		if action == "send_msg" {
+			receiverID := msg.Value("receiver")
+			err := n.SendToClient(ClientID(receiverID), msg)
+			if err != nil {
+				t.Error(err)
+			}
+		}
+	})
+
+	return n
 }
 
 func startNewClient(t *testing.T, s *httptest.Server, clientID ClientID, handler func(msgType int, msg []byte)) Client {
