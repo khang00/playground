@@ -5,12 +5,18 @@ import (
 	"log"
 )
 
+/*
+Client manages a web socket connection to another peer
+*/
 type Client interface {
 	Send(msg []byte) error
 	Run()
 	ID() ClientID
 }
 
+/*
+ClientID is the local id of this client.
+*/
 type ClientID string
 type ClientMsgHandler = func(msgType int, msg []byte)
 

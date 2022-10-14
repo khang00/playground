@@ -7,6 +7,10 @@ import (
 )
 
 type NetMsgHandler = func(net Network, localClientID ClientID, message Message)
+
+/*
+Network is a layer to manage multiple connection to other peers and clients
+*/
 type Network interface {
 	SendToClient(clientID ClientID, message Message) error
 	RegisterConn(conn *websocket.Conn) (ClientID, error)
