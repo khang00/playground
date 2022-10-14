@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSendMessage(t *testing.T) {
+func TestClient_SendMessage(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testUpgrade := websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -22,18 +22,18 @@ func TestSendMessage(t *testing.T) {
 
 		inboundChan1 := make(chan []byte, 0)
 		inboundChan2 := make(chan []byte, 0)
-		c1 := NewClient(conn, func(messageType int, message []byte) {
+		c1 := NewClient(conn, "1", func(messageType int, message []byte) {
 			inboundChan1 <- message
 		})
-		c1.run()
+		c1.Run()
 
-		c2 := NewClient(conn, func(messageType int, message []byte) {
+		c2 := NewClient(conn, "2", func(messageType int, message []byte) {
 			inboundChan2 <- message
 		})
-		c2.run()
+		c2.Run()
 
 		msg1 := []byte("hello from c2 to c1")
-		err = c2.send(msg1)
+		err = c2.Send(msg1)
 		if err != nil {
 			t.Error(err)
 		}
